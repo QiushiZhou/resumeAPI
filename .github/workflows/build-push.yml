@@ -4,11 +4,6 @@ on:
   workflow_dispatch:
    # 新增以下配置，允许被其他工作流调用
   workflow_call:
-    inputs:
-      VITE_SERVER_HOST:
-        required: true
-        type: string
-
 env:
   AWS_REGION: ap-southeast-2
   ECR_REPOSITORY: resume_backend-repo
