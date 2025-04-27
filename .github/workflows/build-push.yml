@@ -2,18 +2,23 @@ name: Deploy Resume Backend to ECR
 
 on:
   workflow_dispatch:
-   # 新增以下配置，允许被其他工作流调用
   workflow_call:
     inputs:
       VITE_SERVER_HOST:
         required: true
         type: string
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+
 env:
   AWS_REGION: ap-southeast-2
   ECR_REPOSITORY: resume_backend-repo
   DOCKER_COMPOSE_FILE: docker-compose.yml
   IMAGE_TAG: ${{ github.sha }}
-  KEEP_LAST_IMAGES: 5
+  KEEP_LAST_IMAGES: 4
 
 jobs:
   build-and-push:
@@ -30,22 +35,36 @@ jobs:
         run: |
           echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
 
+      # 调试步骤：验证 Secrets 是否加载成功
+      - name: Debug AWS Secrets
+        run: |
+          echo "AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}"
+          echo "AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY != '' }}"
+
+      # 关键修改：升级到最新版 configure-aws-credentials@v4
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+          # 添加 role-session-name 提高可读性
+          role-session-name: GitHubActions-${{ github.run_id }}
+
+      # 调试步骤：验证 AWS 凭证是否有效
+      - name: Verify AWS Credentials
+        run: |
+          aws sts get-caller-identity --region ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # 后续步骤保持不变...
       - name: Build and Push Frontend
         run: |
           docker compose -p myproject -f ${{ env.DOCKER_COMPOSE_FILE }} build frontend
           ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
-          # 推送带 SHA 和 latest 双标签
           FRONTEND_SHA_TAG="$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:frontend-${{ env.IMAGE_TAG }}"
           FRONTEND_LATEST_TAG="$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:frontend-latest"
           docker tag myproject-frontend:latest $FRONTEND_SHA_TAG
@@ -57,7 +76,6 @@ jobs:
         run: |
           docker compose -p myproject -f ${{ env.DOCKER_COMPOSE_FILE }} build backend
           ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
-          # 推送带 SHA 和 latest 双标签
           BACKEND_SHA_TAG="$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:backend-${{ env.IMAGE_TAG }}"
           BACKEND_LATEST_TAG="$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:backend-latest"
           docker tag myproject-backend:latest $BACKEND_SHA_TAG
@@ -67,13 +85,14 @@ jobs:
 
       - name: Cleanup old images
         run: |
+          set -euo pipefail  # 强制错误检查
           ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
           REPO_NAME=${{ env.ECR_REPOSITORY }}
           
-          # 获取所有镜像并按推送时间排序（排除 latest 标签）
+          # 改进标签过滤逻辑
           IMAGE_TAGS=$(aws ecr describe-images --repository-name $REPO_NAME \
             --query 'sort_by(imageDetails, &imagePushedAt)[*].imageTags' \
-            --output text | tr '\t' '\n' | grep -v "latest" | sort -u)
+            --output text | tr '\t' '\n' | grep -E '^(frontend|backend)-' | grep -v "latest")
           
           TOTAL_IMAGES=$(echo "$IMAGE_TAGS" | wc -l)
           IMAGES_TO_DELETE=$((TOTAL_IMAGES - ${{ env.KEEP_LAST_IMAGES }}))
@@ -84,7 +103,7 @@ jobs:
             for TAG in $OLD_TAGS; do
               aws ecr batch-delete-image \
                 --repository-name $REPO_NAME \
-                --image-ids imageTag=$TAG
+                --image-ids imageTag=$TAG || echo "[WARN] Failed to delete $TAG"
             done
           else
             echo "No images to delete"
