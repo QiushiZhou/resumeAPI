@@ -7,6 +7,9 @@ on:
       VITE_SERVER_HOST:
         required: true
         type: string
+      DOCKER_COMPOSE_FILE:
+        required: true
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
