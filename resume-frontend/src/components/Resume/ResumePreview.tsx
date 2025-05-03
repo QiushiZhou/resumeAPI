@@ -211,18 +211,18 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData, onSectionClic
   const renderSection = (sectionKey: string) => {
     switch(sectionKey) {
       case 'personal_information':
-        return (
+  return (
           <ClickableSection key="personal_information" onClick={() => handleSectionClick('personal_information')}>
-            <ResumeHeader>
+      <ResumeHeader>
               <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: '1.5rem', letterSpacing: '0.5px' }}>
-                {personal_information?.name?.toUpperCase() || 'YOUR NAME'}
-              </Typography>
+          {personal_information?.name?.toUpperCase() || 'YOUR NAME'}
+        </Typography>
               <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap', fontSize: '0.9rem' }}>
-                {personal_information?.email && (
+          {personal_information?.email && (
                   <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>
-                    {personal_information.email}
-                  </Typography>
-                )}
+              {personal_information.email}
+            </Typography>
+          )}
                 {personal_information?.phone && (
                   <>
                     <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>
@@ -230,18 +230,18 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData, onSectionClic
                     </Typography>
                   </>
                 )}
-                {personal_information?.linkedin && (
+          {personal_information?.linkedin && (
                   <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>
                     LinkedIn: {personal_information.linkedin}
-                  </Typography>
-                )}
-              </Box>
+            </Typography>
+          )}
+        </Box>
               {objective && (
                 <Typography variant="body2" fontWeight="bold" sx={{ mt: 1, fontSize: '0.9rem' }}>
                   {objective}
                 </Typography>
               )}
-            </ResumeHeader>
+      </ResumeHeader>
             <HoverHighlight className="section-highlight">
               <Typography className="edit-hint">Click to edit personal info</Typography>
             </HoverHighlight>
@@ -255,21 +255,21 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData, onSectionClic
               Education
             </SectionTitle>
             
-            {education.map((edu: any, index: number) => (
+        {education.map((edu: any, index: number) => (
               <ClickableSection key={index} onClick={() => handleSectionClick('education', index)}>
                 <Box sx={{ mb: 0.5 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Institution>{edu.institution}</Institution>
                     <DateLocation>{edu.location}</DateLocation>
-                  </Box>
+              </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Degree>
                       {edu.degree}{edu.field_of_study ? ` in ${edu.field_of_study}` : ''}
                       {edu.GPA ? ` • GPA: ${edu.GPA}` : ''}
                     </Degree>
                     <DateLocation>{edu.dates}</DateLocation>
-                  </Box>
-                </Box>
+              </Box>
+            </Box>
                 <HoverHighlight className="section-highlight">
                   <Typography className="edit-hint">Click to edit this education entry</Typography>
                 </HoverHighlight>
@@ -292,7 +292,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData, onSectionClic
                 <Typography className="edit-hint">Click to edit summary</Typography>
               </HoverHighlight>
             </ClickableSection>
-          </Box>
+        </Box>
         ) : null;
       
       case 'experience':
@@ -318,29 +318,29 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData, onSectionClic
                   {exp.location && (
                     <Typography variant="body2" sx={{ fontSize: '0.9rem', fontStyle: 'italic' }}>
                       {exp.location}
-                    </Typography>
+                </Typography>
                   )}
-                </Box>
-                
+            </Box>
+            
                 {/* Responsibilities/Description */}
-                {exp.responsibilities && exp.responsibilities.length > 0 && (
+            {exp.responsibilities && exp.responsibilities.length > 0 && (
                   <Box sx={{ mt: 0.5 }}>
-                    {exp.responsibilities.map((resp: string, i: number) => (
+                {exp.responsibilities.map((resp: string, i: number) => (
                       <BulletPoint key={i}>
                         <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>{resp}</Typography>
                       </BulletPoint>
-                    ))}
-                  </Box>
-                )}
-                
+                ))}
+              </Box>
+            )}
+            
                 {/* Projects Section (if exists) */}
-                {exp.projects && exp.projects.length > 0 && (
+            {exp.projects && exp.projects.length > 0 && (
                   <Box sx={{ mt: 1, pl: 1 }}>
-                    {exp.projects.map((project: any, i: number) => (
+                {exp.projects.map((project: any, i: number) => (
                       <Box key={i} sx={{ mb: 1 }}>
                         <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.9rem', fontStyle: 'italic' }}>
-                          {project.name}
-                        </Typography>
+                      {project.name}
+                    </Typography>
                         
                         {project.responsibilities && project.responsibilities.length > 0 && (
                           <Box>
@@ -348,12 +348,12 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData, onSectionClic
                               <BulletPoint key={j}>
                                 <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>{resp}</Typography>
                               </BulletPoint>
-                            ))}
-                          </Box>
-                        )}
-                      </Box>
-                    ))}
-                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+        ))}
+      </Box>
                 )}
                 
                 <HoverHighlight className="section-highlight">
@@ -392,7 +392,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData, onSectionClic
                       </Typography>{' '}
                       <Typography component="span" sx={{ fontSize: '0.9rem' }}>
                         {displayValue}
-                      </Typography>
+              </Typography>
                     </Box>
                   );
                 })}
@@ -431,8 +431,8 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData, onSectionClic
                             </Typography>{' '}
                             <Typography component="span" sx={{ fontSize: '0.9rem' }}>
                               {itemValue as string}
-                            </Typography>
-                          </Box>
+              </Typography>
+            </Box>
                         ))
                       ) : (
                         // Simple string array
@@ -455,8 +455,8 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ resumeData, onSectionClic
                           : Array.isArray(itemValue) 
                             ? (itemValue as string[]).join(', ')
                             : JSON.stringify(itemValue)}
-                      </Typography>
-                    </Box>
+              </Typography>
+            </Box>
                   ))
                 )}
                 

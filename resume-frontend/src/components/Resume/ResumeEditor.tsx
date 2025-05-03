@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -50,6 +51,8 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import WorkIcon from '@mui/icons-material/Work';
 import AddIcon from '@mui/icons-material/Add';
+import DoneIcon from '@mui/icons-material/Done';
+import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
 
 // 导入API服务
 import { resumeApi } from '../../services/api';
@@ -159,6 +162,8 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeId, onComplete }) => 
     actions: null 
   });
 
+  const navigate = useNavigate();
+
   // Fetch resume data when component mounts
   useEffect(() => {
     const fetchResumeData = async () => {
@@ -183,9 +188,9 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeId, onComplete }) => 
               if (content.section_order && Array.isArray(content.section_order)) {
                 setSectionOrder(content.section_order);
               } else {
-                setSectionOrder(Object.keys(content).filter(key => 
-                  content[key] && key !== 'raw_text' && typeof content[key] === 'object'
-                ));
+              setSectionOrder(Object.keys(content).filter(key => 
+                content[key] && key !== 'raw_text' && typeof content[key] === 'object'
+              ));
               }
               setFileName(resume.filename || '');
               
@@ -201,9 +206,9 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeId, onComplete }) => 
             if (content.section_order && Array.isArray(content.section_order)) {
               setSectionOrder(content.section_order);
             } else {
-              setSectionOrder(Object.keys(content).filter(key => 
-                content[key] && key !== 'raw_text' && typeof content[key] === 'object'
-              ));
+            setSectionOrder(Object.keys(content).filter(key => 
+              content[key] && key !== 'raw_text' && typeof content[key] === 'object'
+            ));
             }
             setFileName(resume.filename || '');
             
@@ -271,7 +276,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeId, onComplete }) => 
             console.log("Successfully created analysis data:", analysis);
           } else {
             console.error('Failed to create analysis after 404', createAnalysisResponse);
-            setScore(70);
+      setScore(70);
           }
         } catch (createError) {
           console.error('Error creating analysis after 404:', createError);
@@ -651,6 +656,22 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeId, onComplete }) => 
     setJobTargetDialogOpen(false);
   };
 
+  // Add function to handle navigation to job recommendations page
+  const handleNavigateToJobRecommendations = () => {
+    if (resumeData) {
+      navigate('/job-recommendations', { 
+        state: { 
+          resumeId: resumeId,
+          resumeContent: resumeData 
+        } 
+      });
+    } else {
+      setSnackbarMessage('Resume data not available. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
   const renderSectionEditor = (section: string, title: string) => {
     if (!resumeData) return null;
 
@@ -662,12 +683,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeId, onComplete }) => 
       return isEditing ? (
         <Box>
           <StringFieldEditor
-            value={editValues[section] || ''}
+              value={editValues[section] || ''}
             onChange={(newValue) => handleTextChange(section, newValue)}
             onOptimize={() => handleOptimizeContent(section, editValues[section] || '')}
             multiline={true}
             rows={6}
-          />
+            />
           <Typography variant="caption" color="text.secondary">
             Tip: Click the magic wand to optimize this content with AI
           </Typography>
@@ -1252,7 +1273,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeId, onComplete }) => 
         </Box>
       );
     }
-    
+
     return null;
   };
 
@@ -1329,7 +1350,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeId, onComplete }) => 
                     {analysisData.areas_for_improvement.slice(0, 3).map((area: string, index: number) => (
                       <ListItem key={index} sx={{ py: 0 }}>
                         <ListItemText 
-                          primary={<Typography variant="body2">{area}</Typography>}
+                          primary={<Typography variant="body2" component="div">{area}</Typography>}
                           sx={{ m: 0 }}
                         />
                       </ListItem>
@@ -1342,13 +1363,25 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeId, onComplete }) => 
             // Fallback for when analysis data is not available
             <>
               <ListItem>
-                <ListItemText primary="Skills Matching" secondary="Loading..." />
+                <ListItemText 
+                  primary="Skills Matching" 
+                  secondary="Loading..." 
+                  secondaryTypographyProps={{ component: 'div' }}
+                />
               </ListItem>
               <ListItem>
-                <ListItemText primary="ATS Compatibility" secondary="Loading..." />
+                <ListItemText 
+                  primary="ATS Compatibility" 
+                  secondary="Loading..." 
+                  secondaryTypographyProps={{ component: 'div' }}
+                />
               </ListItem>
               <ListItem>
-                <ListItemText primary="Impact Statements" secondary="Loading..." />
+                <ListItemText 
+                  primary="Impact Statements" 
+                  secondary="Loading..." 
+                  secondaryTypographyProps={{ component: 'div' }}
+                />
               </ListItem>
             </>
           )}
@@ -1616,36 +1649,36 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeId, onComplete }) => 
           pl: 2,
           maxWidth: 'none'
         }}>
-          <DndContext 
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext 
-              items={sectionOrder}
-              strategy={verticalListSortingStrategy}
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              {sectionOrder.map((section) => (
-                resumeData && (
-                  <SortableSection
-                    key={section}
-                    id={section}
-                    section={section}
-                    resumeData={resumeData}
-                    editMode={editMode}
-                    handleEdit={handleEdit}
-                    handleSave={handleSave}
-                    renderSectionEditor={renderSectionEditor}
+              <SortableContext 
+                items={sectionOrder}
+                strategy={verticalListSortingStrategy}
+              >
+                {sectionOrder.map((section) => (
+                  resumeData && (
+                    <SortableSection
+                      key={section}
+                      id={section}
+                      section={section}
+                      resumeData={resumeData}
+                      editMode={editMode}
+                      handleEdit={handleEdit}
+                      handleSave={handleSave}
+                      renderSectionEditor={renderSectionEditor}
                     ref={(el: HTMLDivElement | null) => {
                       sectionRefs.current[section] = el;
                     }}
-                  />
-                )
-              ))}
-            </SortableContext>
-          </DndContext>
-        </Box>
-
+                    />
+                  )
+                ))}
+              </SortableContext>
+            </DndContext>
+          </Box>
+          
         {/* 右侧预览区 */}
         <Box sx={{ 
           width: '50%', 
@@ -1661,49 +1694,59 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ resumeId, onComplete }) => 
             resumeData={resumeData} 
             onSectionClick={handlePreviewSectionClick}
             sectionOrder={sectionOrder}
-          />
-        </Box>
-      </Stack>
+            />
+          </Box>
+        </Stack>
       
-      <Box sx={{ py: 1, display: 'flex', justifyContent: 'center', gap: 2 }}>
-        <Button 
-          variant="outlined" 
-          startIcon={<FileDownloadIcon />}
-          onClick={() => {
-            // 使用自定义PDF生成API
+      <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'center' }}>
+          <Button 
+            variant="outlined" 
+            color="primary" 
+            startIcon={<VisibilityIcon />}
+            onClick={() => {
             setLoading(true);
+            
             resumeApi.generateCustomPDF(resumeId)
               .then(response => {
-                // 创建blob并下载
-                const blob = new Blob([response.data], { type: 'application/pdf' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `resume_${resumeId}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
+                const file = new Blob(
+                  [response.data], 
+                  { type: 'application/pdf' }
+                );
+                const fileURL = URL.createObjectURL(file);
+                window.open(fileURL, '_blank');
               })
               .catch(error => {
-                console.error('Error generating PDF:', error);
-                alert('Failed to generate PDF. Please try again.');
+                console.error('Error generating PDF preview:', error);
+                alert('Failed to generate PDF preview. Please try again.');
               })
               .finally(() => {
                 setLoading(false);
               });
-          }}
-        >
-          Export as PDF
-        </Button>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          size="large"
-          onClick={onComplete}
-        >
-          Finalize and Save
-        </Button>
+            }}
+          >
+            Preview PDF
+          </Button>
+          
+          <Button 
+            variant="outlined" 
+            color="secondary" 
+            startIcon={<WorkOutlineIcon />}
+            onClick={handleNavigateToJobRecommendations}
+          >
+            Recommend Jobs
+          </Button>
+          
+          <Tooltip title="Complete editing and proceed to download step">
+            <Button 
+              variant="contained" 
+              color="primary" 
+              size="large"
+              startIcon={<FileDownloadIcon />}
+              onClick={onComplete}
+            >
+              Continue to Download
+            </Button>
+          </Tooltip>
       </Box>
       
       {/* 职位目标优化悬浮按钮 */}

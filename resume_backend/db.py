@@ -8,7 +8,7 @@ import datetime
 load_dotenv()
 
 # MongoDB 连接字符串 
-MONGO_URI = "mongodb+srv://admin:admin@cluster0.2am5w.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://admin:admin@cluster0.2am5w.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 
 # 标记MongoDB可用性
 mongodb_available = False

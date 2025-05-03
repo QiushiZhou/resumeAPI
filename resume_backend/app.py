@@ -744,6 +744,21 @@ def optimize_resume_content(resume_id):
         current_content = data['currentContent']
         job_title = data.get('jobTitle', '')
         
+        # 检查原始内容的格式前缀
+        starts_with_dash = current_content.lstrip().startswith("- ")
+        starts_with_bullet = current_content.lstrip().startswith("• ")
+        
+        # 保存原始前缀
+        prefix = ""
+        content_for_ai = current_content
+        
+        if starts_with_dash:
+            prefix = "- "
+            content_for_ai = current_content.lstrip()[2:]
+        elif starts_with_bullet:
+            prefix = "• "
+            content_for_ai = current_content.lstrip()[2:]
+        
         # 构建提示词
         prompt_context = f"Job Target: {job_title}\n" if job_title else ""
         
@@ -765,7 +780,7 @@ def optimize_resume_content(resume_id):
                         {context}
                         
                         Original content:
-                        "{current_content}"
+                        "{content_for_ai}"
                         
                         Please optimize this content to make it more impactful, professional, and ATS-friendly. Focus on:
                         1. Using strong action verbs
@@ -774,6 +789,7 @@ def optimize_resume_content(resume_id):
                         4. Maintaining conciseness and clarity
                         5. Making it keyword-rich for ATS systems
                         
+                        DO NOT include any bullet point markers like "- " or "• " at the beginning of your response.
                         Provide only the optimized content as your response, with no additional explanations.
                         """}
                     ],
@@ -786,6 +802,13 @@ def optimize_resume_content(resume_id):
                 # 移除可能的引号
                 if optimized_content.startswith('"') and optimized_content.endswith('"'):
                     optimized_content = optimized_content[1:-1]
+                
+                # 移除AI可能添加的前缀
+                optimized_content = optimized_content.lstrip("- ").lstrip("• ")
+                
+                # 还原原始前缀
+                if prefix:
+                    optimized_content = f"{prefix}{optimized_content}"
                 
                 return jsonify({
                     'status': 'success',
@@ -879,6 +902,290 @@ def generate_resume_pdf(resume_id):
     except Exception as e:
         print(f"Unexpected error in generate_resume_pdf: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# Add a new endpoint to extract keywords from a resume for job matching
+@app.route('/api/v1/resumes/<resume_id>/extract-keywords', methods=['GET'])
+def extract_resume_keywords(resume_id):
+    """Extract keywords and skills from a resume for job matching"""
+    try:
+        # Get resume data - handle ObjectId based on MongoDB availability
+        if mongodb_available:
+            resume = db.get_resume(ObjectId(resume_id))
+        else:
+            resume = db.get_resume(resume_id)
+        
+        if not resume:
+            return jsonify({'status': 'error', 'message': 'Resume not found'}), 404
+            
+        # Extract resume content
+        resume_content = resume['content'] 
+        
+        # Convert structured JSON to string for OpenAI
+        if isinstance(resume_content, dict):
+            resume_content_str = json.dumps(resume_content, indent=2)
+        else:
+            resume_content_str = str(resume_content)
+        
+        # Check if OpenAI client is available
+        if openai_client:
+            try:
+                # Use OpenAI to extract keywords
+                response = openai_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are an AI assistant that extracts relevant keywords from resumes for job matching."},
+                        {"role": "user", "content": f"""
+                        Extract relevant keywords from the following resume content that would be useful for job matching.
+                        Focus on:
+                        1. Technical skills (programming languages, tools, frameworks)
+                        2. Industry-specific skills
+                        3. Soft skills
+                        4. Educational qualifications
+                        5. Certifications
+                        6. Key achievements and metrics
+                        
+                        Return ONLY a JSON object with a single key "keywords" containing an array of strings.
+                        Each keyword should be a single word or short phrase (1-3 words maximum).
+                        Do not include explanations or descriptions.
+                        
+                        Resume Content:
+                        {resume_content_str}
+                        """}
+                    ],
+                    temperature=0.1,
+                    response_format={"type": "json_object"}
+                )
+                
+                # Parse the keywords
+                keywords_json = response.choices[0].message.content
+                keywords_data = json.loads(keywords_json)
+                
+                return jsonify({
+                    'status': 'success',
+                    'data': {
+                        'resume_id': resume_id,
+                        'keywords': keywords_data.get('keywords', [])
+                    }
+                })
+                
+            except Exception as e:
+                print(f"Error with OpenAI API: {e}")
+                # Fall back to basic keyword extraction
+                return jsonify({
+                    'status': 'success',
+                    'data': {
+                        'resume_id': resume_id,
+                        'keywords': extract_basic_keywords(resume_content_str)
+                    },
+                    'meta': {
+                        'source': 'fallback',
+                        'reason': 'API error'
+                    }
+                })
+        else:
+            # Use basic keyword extraction when OpenAI is not available
+            return jsonify({
+                'status': 'success',
+                'data': {
+                    'resume_id': resume_id,
+                    'keywords': extract_basic_keywords(resume_content_str)
+                },
+                'meta': {
+                    'source': 'fallback',
+                    'reason': 'OpenAI not available'
+                }
+            })
+            
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+def extract_basic_keywords(resume_text):
+    """Basic keyword extraction when OpenAI is not available"""
+    # Common technical skills to look for
+    tech_skills = [
+        "python", "javascript", "java", "c++", "c#", "ruby", "go", "php",
+        "react", "angular", "vue", "node.js", "django", "flask", "spring",
+        "tensorflow", "pytorch", "pandas", "numpy", "sql", "nosql", "mongodb",
+        "mysql", "postgresql", "aws", "azure", "gcp", "docker", "kubernetes",
+        "ci/cd", "git", "rest api", "graphql", "html", "css", "sass",
+        "machine learning", "deep learning", "nlp", "data science", "data analysis"
+    ]
+    
+    # Common soft skills
+    soft_skills = [
+        "leadership", "teamwork", "communication", "problem solving", 
+        "critical thinking", "project management", "time management",
+        "collaboration", "adaptability", "creativity", "organization"
+    ]
+    
+    # Extract keywords by checking if they appear in the resume
+    keywords = []
+    
+    # Convert resume text to lowercase for case-insensitive matching
+    resume_lower = resume_text.lower()
+    
+    # Check for tech skills
+    for skill in tech_skills:
+        if skill in resume_lower:
+            keywords.append(skill)
+    
+    # Check for soft skills
+    for skill in soft_skills:
+        if skill in resume_lower:
+            keywords.append(skill)
+    
+    return keywords
+
+# 添加一个新的API端点，将简历内容转换为单个字符串
+@app.route('/api/v1/resumes/<resume_id>/content-string', methods=['GET'])
+def get_resume_content_string(resume_id):
+    """获取简历内容作为一个单一字符串用于工作匹配"""
+    try:
+        # 获取简历数据 - 根据MongoDB可用性处理ObjectId
+        if mongodb_available:
+            resume = db.get_resume(ObjectId(resume_id))
+        else:
+            resume = db.get_resume(resume_id)
+        
+        if not resume:
+            return jsonify({'status': 'error', 'message': 'Resume not found'}), 404
+            
+        # 提取简历内容
+        resume_content = resume.get('content', {})
+        
+        # 如果OpenAI客户端可用，使用它来生成更好的内容字符串
+        if openai_client:
+            try:
+                # 将结构化JSON转换为字符串
+                if isinstance(resume_content, dict):
+                    resume_content_str = json.dumps(resume_content, indent=2)
+                else:
+                    resume_content_str = str(resume_content)
+                
+                # 使用OpenAI生成内容字符串
+                response = openai_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "你是一个简历内容提取器，你的任务是从简历JSON中提取出所有重要信息，形成一个完整的字符串，用于工作匹配。"},
+                        {"role": "user", "content": f"""
+                        从以下简历内容中提取所有重要信息（工作经历、技能、教育背景、项目经验等），
+                        将它们整合成一个单一的文本字符串，格式为：
+                        
+                        "[职位/角色] [描述] ● [成就/责任点1] ● [成就/责任点2] ● ..."
+                        
+                        保留所有技术关键词、成就数据和重要技能。仅返回最终提取的文本，不要添加任何解释。
+                        
+                        简历内容:
+                        {resume_content_str}
+                        """}
+                    ],
+                    temperature=0.1,
+                )
+                
+                # 获取生成的内容字符串
+                content_string = response.choices[0].message.content.strip()
+                
+                return jsonify({
+                    'status': 'success',
+                    'data': {
+                        'resume_id': resume_id,
+                        'content_string': content_string
+                    }
+                })
+                
+            except Exception as e:
+                print(f"OpenAI API错误: {e}")
+                # 回退到基本内容提取
+                content_string = extract_basic_resume_string(resume_content)
+                return jsonify({
+                    'status': 'success',
+                    'data': {
+                        'resume_id': resume_id,
+                        'content_string': content_string
+                    },
+                    'meta': {
+                        'source': 'fallback',
+                        'reason': 'API错误'
+                    }
+                })
+        else:
+            # 当OpenAI不可用时使用基本内容提取
+            content_string = extract_basic_resume_string(resume_content)
+            return jsonify({
+                'status': 'success',
+                'data': {
+                    'resume_id': resume_id,
+                    'content_string': content_string
+                },
+                'meta': {
+                    'source': 'fallback',
+                    'reason': 'OpenAI不可用'
+                }
+            })
+            
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+def extract_basic_resume_string(resume_content):
+    """当OpenAI不可用时的基本简历内容提取"""
+    result = []
+    
+    # 如果resume_content是字典类型
+    if isinstance(resume_content, dict):
+        # 提取个人信息
+        if 'personal_info' in resume_content:
+            personal = resume_content.get('personal_info', {})
+            if isinstance(personal, dict):
+                name = personal.get('name', '')
+                title = personal.get('title', '')
+                if name or title:
+                    result.append(f"{name} - {title}")
+        
+        # 提取摘要
+        if 'summary' in resume_content and resume_content['summary']:
+            result.append(resume_content['summary'])
+        
+        # 提取工作经验
+        if 'experience' in resume_content and isinstance(resume_content['experience'], list):
+            for job in resume_content['experience']:
+                if isinstance(job, dict):
+                    company = job.get('company', '')
+                    position = job.get('position', '')
+                    job_info = f"{position} at {company}"
+                    result.append(job_info)
+                    
+                    # 提取工作职责/成就
+                    responsibilities = job.get('responsibilities', [])
+                    if isinstance(responsibilities, list):
+                        for resp in responsibilities:
+                            if resp:
+                                result.append(f"● {resp}")
+        
+        # 提取技能
+        if 'skills' in resume_content and isinstance(resume_content['skills'], dict):
+            skills = resume_content['skills']
+            for category, skill_list in skills.items():
+                if isinstance(skill_list, list):
+                    skill_text = ", ".join(skill_list)
+                    result.append(f"{category.replace('_', ' ').title()}: {skill_text}")
+                elif isinstance(skill_list, str):
+                    result.append(f"{category.replace('_', ' ').title()}: {skill_list}")
+        
+        # 提取教育背景
+        if 'education' in resume_content and isinstance(resume_content['education'], list):
+            for edu in resume_content['education']:
+                if isinstance(edu, dict):
+                    institution = edu.get('institution', '')
+                    degree = edu.get('degree', '')
+                    edu_info = f"{degree} from {institution}"
+                    result.append(edu_info)
+    
+    # 如果resume_content是字符串
+    elif isinstance(resume_content, str):
+        result.append(resume_content)
+    
+    # 将所有内容连接成一个字符串
+    return " ".join(result)
 
 if __name__ == '__main__':
     # Use port 8080 instead of 5000 which is used by AirPlay on Mac

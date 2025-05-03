@@ -69,18 +69,21 @@ const ResumeScoreCard: React.FC<ResumeScoreCardProps> = ({ score, analysisData }
                 <ListItemText 
                   primary="Technical Skills" 
                   secondary={`${analysisData.technical_score || 0}%`} 
+                  secondaryTypographyProps={{ component: 'div' }}
                 />
               </ListItem>
               <ListItem>
                 <ListItemText 
                   primary="ATS Compatibility" 
                   secondary={`${analysisData.ats_compatibility_score || 0}%`} 
+                  secondaryTypographyProps={{ component: 'div' }}
                 />
               </ListItem>
               <ListItem>
                 <ListItemText 
                   primary="Communication" 
                   secondary={`${analysisData.communication_score || 0}%`} 
+                  secondaryTypographyProps={{ component: 'div' }}
                 />
               </ListItem>
               {analysisData.areas_for_improvement && analysisData.areas_for_improvement.length > 0 && (
@@ -90,7 +93,7 @@ const ResumeScoreCard: React.FC<ResumeScoreCardProps> = ({ score, analysisData }
                     {analysisData.areas_for_improvement.slice(0, 3).map((area: string, index: number) => (
                       <ListItem key={index} sx={{ py: 0 }}>
                         <ListItemText 
-                          primary={<Typography variant="body2">{area}</Typography>}
+                          primary={<Typography variant="body2" component="div">{area}</Typography>}
                           sx={{ m: 0 }}
                         />
                       </ListItem>
@@ -103,13 +106,25 @@ const ResumeScoreCard: React.FC<ResumeScoreCardProps> = ({ score, analysisData }
             // Fallback for when analysis data is not available
             <>
               <ListItem>
-                <ListItemText primary="Skills Matching" secondary="Loading..." />
+                <ListItemText 
+                  primary="Skills Matching" 
+                  secondary="Loading..." 
+                  secondaryTypographyProps={{ component: 'div' }}
+                />
               </ListItem>
               <ListItem>
-                <ListItemText primary="ATS Compatibility" secondary="Loading..." />
+                <ListItemText 
+                  primary="ATS Compatibility" 
+                  secondary="Loading..." 
+                  secondaryTypographyProps={{ component: 'div' }}
+                />
               </ListItem>
               <ListItem>
-                <ListItemText primary="Impact Statements" secondary="Loading..." />
+                <ListItemText 
+                  primary="Impact Statements" 
+                  secondary="Loading..." 
+                  secondaryTypographyProps={{ component: 'div' }}
+                />
               </ListItem>
             </>
           )}

@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/common/Header';
 import LandingPage from './pages/LandingPage';
 import ResumeListPage from './pages/ResumeListPage';
+import JobRecommendationsPage from './pages/JobRecommendationsPage';
 
 // 创建简约现代主题
 let theme = createTheme({
@@ -268,6 +269,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/resumes" element={<ResumeListPage />} />
+            <Route path="/job-recommendations" element={<JobRecommendationsPage />} />
             {/* Add more routes as needed */}
           </Routes>
         </Router>

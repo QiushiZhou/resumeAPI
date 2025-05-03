@@ -179,14 +179,14 @@ const Header: React.FC = () => {
             <ListItemIcon>
               <HomeIcon color="primary" />
             </ListItemIcon>
-            <ListItemText primary="Home" />
+            <ListItemText primary="Home" primaryTypographyProps={{ component: "div" }} />
           </ListItem>
           {user && (
             <ListItem component="div" onClick={handleNavigateToMyResumes}>
               <ListItemIcon>
                 <DescriptionIcon color="primary" />
               </ListItemIcon>
-              <ListItemText primary="My Resumes" />
+              <ListItemText primary="My Resumes" primaryTypographyProps={{ component: "div" }} />
             </ListItem>
           )}
         </List>

@@ -137,7 +137,7 @@ const LandingPage: React.FC = () => {
     
     try {
       setIsDownloading(true);
-      const response = await resumeApi.downloadResume(resumeId);
+      const response = await resumeApi.generateCustomPDF(resumeId);
       
       // Create a blob from the response
       const blob = new Blob([response.data], { type: 'application/pdf' });
