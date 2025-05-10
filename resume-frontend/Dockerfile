@@ -33,7 +33,7 @@ RUN if [ ! -f /etc/nginx/conf.d/default.conf ]; then \
         try_files $uri $uri/ /index.html; \
     } \
     location /api/v1 { \
-        proxy_pass http://backend:8080/api/v1; \
+        proxy_pass http://resume-backend:8080/api/v1; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
     } \
