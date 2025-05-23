@@ -10,6 +10,8 @@ flowchart TB
         Editor[Resume Editor]
         ResumeScore[Resume Score Component]
         JobTarget[Job Target Component]
+        JobRecs[Job Recommendations]
+        AIContent[AI Content Optimizer]
     end
 
     subgraph Backend["Backend (Flask)"]
@@ -18,6 +20,7 @@ flowchart TB
         Analyzer[Resume Analyzer]
         Optimizer[Content Optimizer]
         PDFGenerator[PDF Generator]
+        JobMatcher[Job Matcher]
     end
 
     subgraph Database["Data Storage"]
@@ -49,10 +52,153 @@ flowchart TB
     PDFGenerator -->|Return PDF| API
     API -->|Return PDF| Editor
     
+    JobTarget -->|Set Target Job| API
+    API -->|Match Jobs| JobMatcher
+    JobMatcher -->|Get Job Data| MongoDB
+    JobMatcher -->|Return Matches| API
+    API -->|Return Job Matches| JobRecs
+    
+    AIContent -->|Optimize Section| API
+    API -->|Optimize Content| Optimizer
+    
     style Frontend fill:#f9f,stroke:#333,stroke-width:2px
     style Backend fill:#bbf,stroke:#333,stroke-width:2px
     style Database fill:#bfb,stroke:#333,stroke-width:2px
     style AI fill:#fbf,stroke:#333,stroke-width:2px
+```
+
+## API Endpoints Documentation
+
+### Resume Management APIs
+
+```mermaid
+flowchart LR
+    subgraph ResumeManagement["Resume Management"]
+        Upload[POST /api/v1/resumes/upload]
+        List[GET /api/v1/resumes]
+        Get[GET /api/v1/resumes/:id]
+        Delete[DELETE /api/v1/resumes/:id]
+    end
+    
+    subgraph ContentManagement["Content Management"]
+        Parse[POST /api/v1/resumes/:id/parse]
+        Update[PUT /api/v1/resumes/:id/content]
+        Optimize[POST /api/v1/resumes/:id/optimize-content]
+    end
+    
+    subgraph Analysis["Analysis & Optimization"]
+        Analyze[POST /api/v1/resumes/:id/analyze]
+        GetAnalysis[GET /api/v1/analyses/:id]
+        Keywords[GET /api/v1/resumes/:id/extract-keywords]
+    end
+    
+    subgraph Export["Export & Download"]
+        GeneratePDF[GET /api/v1/resumes/:id/generate-pdf]
+        Download[GET /api/v1/resumes/:id/download]
+    end
+    
+    subgraph JobMatching["Job Matching"]
+        JobSuggestions[GET /api/v1/resumes/:id/job-suggestions]
+    end
+    
+    subgraph System["System"]
+        Health[GET /api/v1/health]
+    end
+    
+    style ResumeManagement fill:#f9f,stroke:#333,stroke-width:2px
+    style ContentManagement fill:#bbf,stroke:#333,stroke-width:2px
+    style Analysis fill:#bfb,stroke:#333,stroke-width:2px
+    style Export fill:#fbf,stroke:#333,stroke-width:2px
+    style JobMatching fill:#fdb,stroke:#333,stroke-width:2px
+    style System fill:#ddd,stroke:#333,stroke-width:2px
+```
+
+### API Response Format
+
+```mermaid
+flowchart TD
+    Response[API Response] --> Success[Success Response]
+    Response --> Error[Error Response]
+    
+    Success --> SuccessData[Data Object]
+    Success --> SuccessStatus[Status: success]
+    
+    Error --> ErrorMessage[Error Message]
+    Error --> ErrorStatus[Status: error]
+    
+    subgraph SuccessDataStructure["Success Response Structure"]
+        Status[status: string]
+        Data[data: object]
+    end
+    
+    subgraph ErrorDataStructure["Error Response Structure"]
+        Status2[status: string]
+        Message[message: string]
+    end
+    
+    style Response fill:#f9f,stroke:#333,stroke-width:2px
+    style Success fill:#bfb,stroke:#333,stroke-width:2px
+    style Error fill:#fbb,stroke:#333,stroke-width:2px
+```
+
+### API Error Handling
+
+```mermaid
+flowchart TD
+    Error[API Error] --> ClientError[Client Errors]
+    Error --> ServerError[Server Errors]
+    
+    ClientError --> BadRequest[400 Bad Request]
+    ClientError --> NotFound[404 Not Found]
+    
+    ServerError --> InternalError[500 Internal Server Error]
+    
+    subgraph ErrorResponses["Error Response Examples"]
+        BadRequestExample["400: Invalid parameters"]
+        NotFoundExample["404: Resource not found"]
+        ServerErrorExample["500: Internal server error"]
+    end
+    
+    style Error fill:#fbb,stroke:#333,stroke-width:2px
+    style ClientError fill:#fdb,stroke:#333,stroke-width:2px
+    style ServerError fill:#fbb,stroke:#333,stroke-width:2px
+```
+
+### API Integration Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant DB
+    participant AI
+    
+    Client->>API: POST /api/v1/resumes/upload
+    API->>DB: Store Resume
+    DB-->>API: Resume ID
+    API-->>Client: Resume Created
+    
+    Client->>API: POST /api/v1/resumes/:id/parse
+    API->>DB: Get Resume
+    DB-->>API: Resume Data
+    API-->>Client: Parse Complete
+    
+    Client->>API: POST /api/v1/resumes/:id/analyze
+    API->>AI: Analyze Content
+    AI-->>API: Analysis Results
+    API->>DB: Store Analysis
+    API-->>Client: Analysis Complete
+    
+    Client->>API: POST /api/v1/resumes/:id/optimize-content
+    API->>AI: Optimize Content
+    AI-->>API: Optimized Content
+    API->>DB: Update Content
+    API-->>Client: Content Optimized
+    
+    Client->>API: GET /api/v1/resumes/:id/generate-pdf
+    API->>DB: Get Resume
+    DB-->>API: Resume Data
+    API-->>Client: PDF File
 ```
 
 ## User Interaction Flow
@@ -98,12 +244,18 @@ sequenceDiagram
     FE->>FE: Save target job position
     
     User->>FE: Click optimize content
-    FE->>BE: POST /api/v1/resumes/{resumeId}/optimize
+    FE->>BE: POST /api/v1/resumes/{resumeId}/optimize-content
     BE->>BE: Prepare optimization request
     BE->>AI: Send resume content + target job
     AI-->>BE: Return optimized content
     BE-->>FE: Return optimized content
     FE->>FE: Update UI display
+    
+    User->>FE: Request job recommendations
+    FE->>BE: GET /api/v1/resumes/{resumeId}/job-suggestions
+    BE->>BE: Match jobs based on resume
+    BE-->>FE: Return job matches
+    FE->>FE: Display job recommendations
     
     User->>FE: Export PDF
     FE->>BE: GET /api/v1/resumes/{resumeId}/generate-pdf
@@ -187,10 +339,12 @@ flowchart TB
     Score --> TechScore[Technical Skills Score]
     Score --> ATSScore[ATS Compatibility Score]
     Score --> CommScore[Communication Skills Score]
+    Score --> JobMatchScore[Job Match Score]
     
     TechScore --> Feedback[Generate Improvement Suggestions]
     ATSScore --> Feedback
     CommScore --> Feedback
+    JobMatchScore --> Feedback
     
     Feedback --> Gap[Identify Skill Gaps]
     Gap --> Suggest[Provide Content Suggestions]
@@ -208,6 +362,11 @@ flowchart TB
     Process --> Enhance[Enhance Content]
     Enhance --> Return[Return Optimized Content]
     Return --> EndOpt([End Optimization])
+    
+    JobMatch[Job Matching] --> ExtractSkills[Extract Skills]
+    ExtractSkills --> MatchJobs[Match with Job Database]
+    MatchJobs --> RankJobs[Rank Job Matches]
+    RankJobs --> ReturnMatches[Return Job Matches]
 ```
 
 ## Frontend-Backend Interaction Diagram
@@ -229,6 +388,8 @@ flowchart LR
             ArrayFieldEditor[Array Field Editor]
             OptimizeButton[Optimize Button]
             SortableSection[Sortable Section]
+            JobRecommendations[Job Recommendations]
+            AIContentOptimizer[AI Content Optimizer]
         end
     end
     
@@ -244,6 +405,7 @@ flowchart LR
             ParserService[Parser Service]
             AIService[AI Service]
             PDFService[PDF Service]
+            JobMatchingService[Job Matching Service]
         end
     end
     
@@ -264,6 +426,7 @@ erDiagram
     RESUME ||--|| RESUME_CONTENT : contains
     RESUME ||--o| ANALYSIS : has
     RESUME ||--o{ PDF : generates
+    RESUME ||--o{ JOB_MATCH : has
     
     USER {
         string id PK
@@ -298,6 +461,7 @@ erDiagram
         number technical_score
         number ats_compatibility_score
         number communication_score
+        number job_match_score
         array areas_for_improvement
         date analyzed_at
     }
@@ -307,6 +471,16 @@ erDiagram
         string resume_id FK
         string filename
         date generated_at
+    }
+    
+    JOB_MATCH {
+        string id PK
+        string resume_id FK
+        string job_title
+        number match_score
+        array matching_skills
+        array missing_skills
+        date matched_at
     }
 ```
 
@@ -331,6 +505,7 @@ flowchart TB
     
     subgraph ExternalServices["External Services"]
         OpenAI[OpenAI API]
+        JobAPI[Job Search API]
     end
     
     Browser <--> Frontend
@@ -338,6 +513,7 @@ flowchart TB
     Backend <--> Database
     Backend <--> Storage
     Backend <--> OpenAI
+    Backend <--> JobAPI
     
     style Client fill:#f9f,stroke:#333,stroke-width:2px
     style Cloud fill:#bbf,stroke:#333,stroke-width:2px

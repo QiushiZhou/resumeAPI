@@ -21,6 +21,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
 import DescriptionIcon from '@mui/icons-material/Description';
+import WorkIcon from '@mui/icons-material/Work';
 import GoogleLoginButton from '../Auth/GoogleLoginButton';
 
 const Header: React.FC = () => {
@@ -43,6 +44,11 @@ const Header: React.FC = () => {
 
   const handleNavigateToMyResumes = () => {
     navigate('/resumes');
+    if (mobileOpen) setMobileOpen(false);
+  };
+
+  const handleNavigateToJobSearch = () => {
+    navigate('/job-search');
     if (mobileOpen) setMobileOpen(false);
   };
 
@@ -136,6 +142,19 @@ const Header: React.FC = () => {
                   My Resumes
                 </Button>
                 <Button 
+                  color="inherit"
+                  onClick={handleNavigateToJobSearch}
+                  sx={{ 
+                    mr: 2,
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                      transition: 'transform 0.2s ease'
+                    }
+                  }}
+                >
+                  Job Search
+                </Button>
+                <Button 
                   variant="outlined" 
                   color="primary" 
                   onClick={handleLogout}
@@ -182,12 +201,20 @@ const Header: React.FC = () => {
             <ListItemText primary="Home" primaryTypographyProps={{ component: "div" }} />
           </ListItem>
           {user && (
-            <ListItem component="div" onClick={handleNavigateToMyResumes}>
-              <ListItemIcon>
-                <DescriptionIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText primary="My Resumes" primaryTypographyProps={{ component: "div" }} />
-            </ListItem>
+            <>
+              <ListItem component="div" onClick={handleNavigateToMyResumes}>
+                <ListItemIcon>
+                  <DescriptionIcon color="primary" />
+                </ListItemIcon>
+                <ListItemText primary="My Resumes" primaryTypographyProps={{ component: "div" }} />
+              </ListItem>
+              <ListItem component="div" onClick={handleNavigateToJobSearch}>
+                <ListItemIcon>
+                  <WorkIcon color="primary" />
+                </ListItemIcon>
+                <ListItemText primary="Job Search" primaryTypographyProps={{ component: "div" }} />
+              </ListItem>
+            </>
           )}
         </List>
         <Divider />
