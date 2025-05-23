@@ -1,8 +1,24 @@
 import axios from 'axios';
 
+// 动态获取API基础URL，支持部署环境配置
+const getApiBaseUrl = () => {
+  // 1. 首先检查环境变量
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // 2. 在生产环境中，如果前端部署在AWS，使用相对路径（通过nginx代理）
+  if (process.env.NODE_ENV === 'production') {
+    return '/api/v1';
+  }
+  
+  // 3. 开发环境默认使用localhost
+  return 'http://localhost:8080/api/v1';
+};
+
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api/v1',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
