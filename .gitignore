@@ -1,5 +1,6 @@
 # Environment variables
 .env
+.env.*
 
 # Python
 __pycache__/
@@ -23,12 +24,18 @@ var/
 .installed.cfg
 *.egg
 
+# Logs
+*.log
+app.log
+
 # Uploads
 uploads/
+*.pdf
 
-# Virtual Environment
-venv/
-ENV/
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
 
 # IDE
 .idea/
@@ -36,8 +43,16 @@ ENV/
 *.swp
 *.swo
 
-# Docker
-.dockerignore
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Logs
-*.log 
+# Build
+/build
+/dist
+
+# Virtual Environment
+venv/
+ENV/ 
