@@ -33,8 +33,16 @@ from resume_pdf_generator import pdf_generator
 load_dotenv()
 
 app = Flask(__name__)
-# 启用CORS，允许所有来源
-CORS(app, resources={r"/*": {"origins": "*"}})
+# 启用CORS，允许所有来源，包含更多配置选项确保AWS部署正常工作
+CORS(app, resources={
+    r"/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+        "expose_headers": ["Content-Disposition"],
+        "supports_credentials": False
+    }
+})
 
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['ALLOWED_EXTENSIONS'] = {'pdf'}  # 只允许PDF文件
@@ -44,6 +52,25 @@ swagger = Swagger(app, config=swagger_config, template=swagger_template)
 
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# 添加全局OPTIONS处理以确保CORS预检请求正常工作
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "*")
+        response.headers.add('Access-Control-Allow-Methods', "*")
+        return response
+
+# 添加after_request处理器确保所有响应都包含CORS头
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Expose-Headers', 'Content-Disposition')
+    return response
 
 # Check MongoDB availability
 mongodb_available = db.mongodb_available
